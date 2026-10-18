@@ -4,6 +4,10 @@
 
 ## 构建与使用
 
+可以从 [GitHub Releases](https://github.com/moonrailgun/fanqie-dl/releases) 下载对应系统和架构的压缩包，解压后直接运行；Windows 使用 `fanqie-dl.exe`。每个版本附带 `checksums.txt`（SHA-256）。
+
+从源码构建：
+
 需要 Go 1.22 或更新版本：
 
 ```sh
@@ -71,6 +75,7 @@ download → 完整目录 → 筛选未缓存章节 → 批量签名 POST → CM
 go test ./...
 go test -race ./...
 go vet ./...
+bash scripts/release_test.sh
 
 # 可选：请求真实上游，验证搜索、目录、单章及批量正文解密
 FANQIE_LIVE_TEST=1 go test ./internal/fanqie -run TestLive -v
@@ -79,6 +84,28 @@ FANQIE_LIVE_TEST=1 go test ./internal/fanqie -run TestLive -v
 离线测试覆盖签名参考向量、POST 请求体签名、DH/CM 解密、批量对象/数组响应、部分失败与单章补取、100 章分批、目录顺序和缺章检查、HTML 转文本、失败恢复、缓存损坏和已有文件保护。
 
 2026-10-18 在 macOS arm64 / Go 1.22.5 实测：《三国演义》`6838936284967209991` 的 124 个目录条目（含 120 回正文）全部下载完成。主批次为 100 + 24 章；其中一章为纯插图，批量响应仅含标题，单独重试两次后由单章接口补回图片链接，另查询一次首章补齐作者。逐章核对正文与目录顺序后，复用全部 124 个缓存章节再次导出，两个文件逐字节一致；复用时没有正文请求。这是该书、该次接口状态的验证，不代表所有书籍都能下载。
+
+## 发布版本
+
+先将改动提交并推送到 `main`，然后执行（需要 Git 和仓库推送权限）：
+
+```sh
+./scripts/release.sh            # 交互选择 patch / minor / major
+./scripts/release.sh --dry-run  # 交互选择并预览，不创建或推送发布标签
+./scripts/release.sh patch      # 例如 v0.1.0 -> v0.1.1
+./scripts/release.sh minor      # 例如 v0.1.1 -> v0.2.0
+./scripts/release.sh major      # 例如 v0.2.0 -> v1.0.0
+```
+
+未指定升级类型时，输入 `1` / `2` / `3` 或对应类型名称进行选择；空输入或无效输入会重新询问，输入结束则取消发布。自动化调用请显式传入升级类型。
+
+版本号来自 `vMAJOR.MINOR.PATCH` Git 标签，不维护额外版本文件；没有历史版本时，首次发布固定为 `v0.1.0`。发布包的 `fanqie-dl --version` 显示该版本；普通 `go build` 显示 `dev`。
+
+脚本会拉取远端 `main` 和标签，要求工作区干净、当前分支为 `main` 且与 `origin/main` 一致，当前提交也不能已有发布标签。通过检查后创建带注释的标签并只推送该标签，不代为提交代码或推送分支。`--dry-run` 同样执行这些检查和拉取操作。
+
+标签推送触发 `.github/workflows/release.yml`：先运行离线测试与 `go vet`，再用 GoReleaser 构建 macOS、Linux、Windows 的 amd64/arm64 共 6 个版本，发布 GitHub Release、压缩包（Windows 为 ZIP，其余为 tar.gz）和校验文件。工作流使用仓库自带的 `GITHUB_TOKEN`，无需额外配置发布密钥；仓库需启用 GitHub Actions。
+
+推送成功只表示已触发发布，构建和上传结果需在仓库 Actions 中查看。标签推送失败时，脚本保留本地标签并打印重试命令；Actions 失败时修复原因并重新运行对应工作流，代码修复则提交后发布新版本。
 
 ## 许可证
 
