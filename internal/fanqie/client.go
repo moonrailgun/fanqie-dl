@@ -46,12 +46,12 @@ type Content struct {
 }
 
 type Client struct {
-	http                                *http.Client
-	searchURL, directoryURL, contentURL string
+	http                                         *http.Client
+	searchURL, directoryURL, contentURL, fullURL string
 }
 
 func NewClient(timeout time.Duration) *Client {
-	return &Client{http: &http.Client{Timeout: timeout}, searchURL: "https://api.fanqiesdk.com/api/novel/channel/homepage/search/search/v1/", directoryURL: "https://fanqienovel.com/api/reader/directory/detail", contentURL: "https://novel.snssdk.com/api/novel/book/reader/content/v1"}
+	return &Client{http: &http.Client{Timeout: timeout}, searchURL: "https://api.fanqiesdk.com/api/novel/channel/homepage/search/search/v1/", directoryURL: "https://fanqienovel.com/api/reader/directory/detail", contentURL: "https://novel.snssdk.com/api/novel/book/reader/content/v1", fullURL: "https://novelfm-hl.snssdk.com/novelfm/playerapi/full/mget/v1/"}
 }
 
 func (c *Client) get(ctx context.Context, base string, q url.Values, y string, dst any) (http.Header, error) {
