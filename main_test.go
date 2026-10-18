@@ -20,3 +20,16 @@ func TestCLIHelpAndInvalidArguments(t *testing.T) {
 		}
 	}
 }
+
+func TestCLIVersion(t *testing.T) {
+	var out, errOut bytes.Buffer
+	if err := run(context.Background(), []string{"--version"}, &out, &errOut); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "fanqie-dl dev\n" || errOut.Len() != 0 {
+		t.Fatalf("stdout=%q stderr=%q", out.String(), errOut.String())
+	}
+	if err := run(context.Background(), []string{"--version", "extra"}, &out, &errOut); err == nil {
+		t.Fatal("accepted extra argument")
+	}
+}

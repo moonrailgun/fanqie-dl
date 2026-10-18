@@ -20,11 +20,14 @@ import (
 	"fanqie-dl/internal/fanqie"
 )
 
+var version = "dev"
+
 const usage = `fanqie-dl — 番茄小说搜索与全本 TXT 下载
 
 用法：
   fanqie-dl search [--json] [--offset N] [--timeout 20s] 关键词
   fanqie-dl download [-o 文件.txt] [--cache-dir 目录] [--interval 200ms] [--timeout 20s] 书籍ID或链接
+  fanqie-dl --version
 
 选项写在关键词或书籍 ID 前。使用 search -h / download -h 查看选项。
 下载默认保存为 书籍ID.txt；重复运行会从章节缓存继续，不覆盖已有文件。
@@ -45,6 +48,13 @@ func main() {
 func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
 		_, err := io.WriteString(stdout, usage)
+		return err
+	}
+	if args[0] == "--version" {
+		if len(args) != 1 {
+			return errors.New("--version does not accept arguments")
+		}
+		_, err := fmt.Fprintln(stdout, "fanqie-dl", version)
 		return err
 	}
 	if args[0] != "search" && args[0] != "download" {
