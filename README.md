@@ -123,11 +123,12 @@ Windows 脚本测试（PowerShell 5.1 或 7，需要 Git for Windows）：
 先将改动提交并推送到 `main`，然后执行（需要 Git 和仓库推送权限）：
 
 ```sh
-./release.sh            # 交互选择 patch / minor / major
+./release.sh            # 交互选择 patch / minor / major，或直接输入目标版本
 ./release.sh --dry-run  # 交互选择并预览，不创建或推送发布标签
 ./release.sh patch      # 例如 v0.1.0 -> v0.1.1
 ./release.sh minor      # 例如 v0.1.1 -> v0.2.0
 ./release.sh major      # 例如 v0.2.0 -> v1.0.0
+./release.sh 1.0.0      # 指定目标版本，也支持 v1.0.0
 ```
 
 Windows 安装完整的 [Git for Windows](https://gitforwindows.org/) 后，可以在 Git Bash 中执行上述命令，或在 PowerShell 中执行：
@@ -136,13 +137,14 @@ Windows 安装完整的 [Git for Windows](https://gitforwindows.org/) 后，可�
 powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1 --dry-run
 powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1 minor
+powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1 1.0.0
 ```
 
 PowerShell 入口调用 Git 自带的 Bash，复用相同的版本选择、检查与发布逻辑，无需 WSL；使用 PowerShell 7 时可以将命令中的 `powershell` 替换为 `pwsh`。
 
-未指定升级类型时，先显示当前版本及各选项对应的新版本，输入 `1` / `2` / `3` 或对应类型名称进行选择，选定后显示版本变更；空输入或无效输入会重新询问，输入结束则取消发布。自动化调用请显式传入升级类型。
+未指定升级类型或目标版本时，先显示当前版本及各选项对应的新版本，输入 `1` / `2` / `3`、对应类型名称，或直接输入 `1.0.0` / `v1.0.0` 这样的目标版本，选定后显示版本变更。目标版本必须符合 `X.Y.Z` 格式（数字不含前导零，可加 `v` 前缀）且高于当前版本；空输入或无效输入会重新询问，输入结束则取消发布。自动化调用请显式传入升级类型或目标版本。
 
-版本号来自 `vMAJOR.MINOR.PATCH` Git 标签，不维护额外版本文件；没有历史版本时，首次发布固定为 `v0.1.0`。发布包的 `fanqie-dl --version` 显示该版本；普通 `go build` 显示 `dev`。
+版本号来自 `vMAJOR.MINOR.PATCH` Git 标签，不维护额外版本文件；没有历史版本时，三种升级选项默认发布 `v0.1.0`，也可直接指定其他目标版本。发布包的 `fanqie-dl --version` 显示该版本；普通 `go build` 显示 `dev`。
 
 脚本会拉取远端 `main` 和标签，要求工作区干净、当前分支为 `main` 且与 `origin/main` 一致，当前提交也不能已有发布标签。通过检查后创建带注释的标签并只推送该标签，不代为提交代码或推送分支。`--dry-run` 同样执行这些检查和拉取操作。
 

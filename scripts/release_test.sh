@@ -39,6 +39,13 @@ done
 printf '1\n' | sh release.sh --dry-run >"$tmp/output"
 grep -Fq 'Release: none -> v0.1.0' "$tmp/output" || fail 'wrong initial version'
 [[ -z $(git tag --list) && -z $(remote_tags first) ]] || fail 'dry run created a tag'
+for target in 1.0.0 v1.0.0; do
+  printf '%s\n' "$target" | sh release.sh --dry-run >"$tmp/output" 2>&1 || { cat "$tmp/output"; fail "rejected interactive version: $target"; }
+  grep -Fq 'Release: none -> v1.0.0' "$tmp/output" || fail 'wrong interactive target version'
+  sh release.sh "$target" --dry-run >"$tmp/output" 2>&1
+  grep -Fq 'Release: none -> v1.0.0' "$tmp/output" || fail 'wrong explicit target version'
+done
+[[ -z $(git tag --list) && -z $(remote_tags first) ]] || fail 'custom dry run created a tag'
 printf 'patch\n' | sh release.sh >"$tmp/output"
 [[ $(remote_tags first) == v0.1.0 ]] || fail 'first release was not pushed'
 [[ $(git cat-file -t refs/tags/v0.1.0) == tag ]] || fail 'release tag is not annotated'
@@ -66,6 +73,28 @@ for bump in patch minor major; do
   sh release.sh "$bump" >"$tmp/output"
   [[ $(remote_tags "$bump") == "$(printf 'v1.2.3\n%s' "$next")" ]] || fail "wrong $bump tags"
 done
+
+new_repo custom
+printf '1.2.3\n' | sh release.sh >"$tmp/output" 2>&1
+[[ $(remote_tags custom) == v1.2.3 ]] || fail 'custom first release was not pushed'
+[[ $(git cat-file -t refs/tags/v1.2.3) == tag ]] || fail 'custom release tag is not annotated'
+git commit --allow-empty -qm next
+git push -q origin main
+for target in 1.2 01.3.0 1.03.0 1.3.00 1.3.0-beta -1.3.0 v1.3.0/extra; do
+  if sh release.sh "$target" --dry-run >"$tmp/output" 2>&1; then fail "accepted invalid version: $target"; fi
+done
+for target in 1.2.3 v1.2.3 1.2.2 1.1.9 0.9.9; do
+  if sh release.sh "$target" --dry-run >"$tmp/output" 2>&1; then fail "accepted non-increasing version: $target"; fi
+  grep -Fq 'must be greater than v1.2.3' "$tmp/output" || fail 'missing version order error'
+done
+if sh release.sh patch 1.3.0 --dry-run >"$tmp/output" 2>&1; then fail 'accepted multiple release targets'; fi
+printf '1.3\n1.2.3\n1.2.2\n1.10.0\n' | sh release.sh --dry-run >"$tmp/output" 2>&1
+grep -Fq 'Release: v1.2.3 -> v1.10.0' "$tmp/output" || fail 'invalid custom selection did not retry'
+grep -Fq 'invalid version' "$tmp/output" || fail 'missing version format error'
+grep -Fq 'must be greater than v1.2.3' "$tmp/output" || fail 'missing interactive version order error'
+[[ $(git tag --list) == v1.2.3 && $(remote_tags custom) == v1.2.3 ]] || fail 'custom validation created a tag'
+sh release.sh v1.10.0 >"$tmp/output" 2>&1
+[[ $(remote_tags custom) == "$(printf 'v1.10.0\nv1.2.3')" ]] || fail 'explicit version was not pushed'
 
 new_repo guards
 touch untracked

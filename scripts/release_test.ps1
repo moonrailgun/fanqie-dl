@@ -44,6 +44,11 @@ try {
         $output = & $wrapper patch --dry-run
         Assert ($LASTEXITCODE -eq 0) 'dry run failed'
         Assert ($output -match 'v0.1.0') 'wrong initial version'
+        foreach ($target in '1.0.0', 'v1.0.0') {
+            $output = & $wrapper $target --dry-run
+            Assert ($LASTEXITCODE -eq 0) 'custom version dry run failed'
+            Assert ($output -match 'none -> v1.0.0') 'wrapper did not forward the target version'
+        }
         Assert (-not (Run-Git tag --list)) 'dry run created a tag'
         & $wrapper patch
         Assert ($LASTEXITCODE -eq 0) 'release failed'
