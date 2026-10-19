@@ -12,7 +12,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  windows-scripts:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          ./scripts/install_test.ps1
+      - name: Test PowerShell 7
+        shell: pwsh
+        run: |
+          ./scripts/install_test.ps1
+
   release:
+    needs: windows-scripts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

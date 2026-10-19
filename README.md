@@ -20,6 +20,15 @@ export PATH="$HOME/.local/bin:$PATH"
 
 重新打开终端后生效。已有源码时也可以运行 `sh scripts/install.sh`；设置 `FANQIE_DL_INSTALL_DIR` 可指定其他安装目录。
 
+Windows 在 PowerShell 5.1 或更新版本中运行（同样需要先发布首个 Release）：
+
+```powershell
+Invoke-RestMethod https://raw.githubusercontent.com/moonrailgun/fanqie-dl/main/scripts/install.ps1 | Invoke-Expression
+fanqie-dl --version
+```
+
+自动选择 Windows amd64 / arm64 ZIP 包并校验 SHA-256，安装到 `%LOCALAPPDATA%\Programs\fanqie-dl\fanqie-dl.exe`，无需管理员权限或 Git。安装目录会加入用户 `PATH`，当前 PowerShell 立即生效，其他终端需重新打开。重复执行即可升级；下载、校验或替换失败会保留旧文件，升级前请退出正在运行的 `fanqie-dl`。设置 `$env:FANQIE_DL_INSTALL_DIR` 可自定义目录；已有源码时可执行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1`，这不会修改系统执行策略。
+
 可以从 [GitHub Releases](https://github.com/moonrailgun/fanqie-dl/releases) 下载对应系统和架构的压缩包，解压后直接运行；Windows 使用 `fanqie-dl.exe`。每个版本附带 `checksums.txt`（SHA-256）。
 
 从源码构建：
@@ -98,6 +107,12 @@ bash scripts/install_test.sh
 FANQIE_LIVE_TEST=1 go test ./internal/fanqie -run TestLive -v
 ```
 
+Windows 安装脚本测试（PowerShell 5.1 或 7）：
+
+```powershell
+./scripts/install_test.ps1
+```
+
 离线测试覆盖签名参考向量、POST 请求体签名、DH/CM 解密、批量对象/数组响应、部分失败与单章补取、100 章分批、目录顺序和缺章检查、HTML 转文本、失败恢复、缓存损坏和已有文件保护。
 
 2026-10-18 在 macOS arm64 / Go 1.22.5 实测：《三国演义》`6838936284967209991` 的 124 个目录条目（含 120 回正文）全部下载完成。主批次为 100 + 24 章；其中一章为纯插图，批量响应仅含标题，单独重试两次后由单章接口补回图片链接，另查询一次首章补齐作者。逐章核对正文与目录顺序后，复用全部 124 个缓存章节再次导出，两个文件逐字节一致；复用时没有正文请求。这是该书、该次接口状态的验证，不代表所有书籍都能下载。
@@ -120,7 +135,7 @@ FANQIE_LIVE_TEST=1 go test ./internal/fanqie -run TestLive -v
 
 脚本会拉取远端 `main` 和标签，要求工作区干净、当前分支为 `main` 且与 `origin/main` 一致，当前提交也不能已有发布标签。通过检查后创建带注释的标签并只推送该标签，不代为提交代码或推送分支。`--dry-run` 同样执行这些检查和拉取操作。
 
-标签推送触发 `.github/workflows/release.yml`：先运行离线测试与 `go vet`，再用 GoReleaser 构建 macOS、Linux、Windows 的 amd64/arm64 共 6 个版本，发布 GitHub Release、压缩包（Windows 为 ZIP，其余为 tar.gz）和校验文件。工作流使用仓库自带的 `GITHUB_TOKEN`，无需额外配置发布密钥；仓库需启用 GitHub Actions。
+标签推送触发 `.github/workflows/release.yml`：先在 Windows 上用 PowerShell 5.1 和 7 验证安装脚本，再运行离线测试与 `go vet`，通过后用 GoReleaser 构建 macOS、Linux、Windows 的 amd64/arm64 共 6 个版本，发布 GitHub Release、压缩包（Windows 为 ZIP，其余为 tar.gz）和校验文件。工作流使用仓库自带的 `GITHUB_TOKEN`，无需额外配置发布密钥；仓库需启用 GitHub Actions。
 
 推送成功只表示已触发发布，构建和上传结果需在仓库 Actions 中查看。标签推送失败时，脚本保留本地标签并打印重试命令；Actions 失败时修复原因并重新运行对应工作流，代码修复则提交后发布新版本。
 

@@ -6,7 +6,7 @@ die() { echo "Error: $*" >&2; exit 1; }
 case "$(uname -s)" in
   Darwin) os=darwin ;;
   Linux) os=linux ;;
-  *) die 'unsupported operating system; expected macOS or Linux' ;;
+  *) die 'unsupported operating system; use install.ps1 on Windows' ;;
 esac
 case "$(uname -m)" in
   arm64|aarch64) arch=arm64 ;;
