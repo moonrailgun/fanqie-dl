@@ -31,9 +31,13 @@ remote_tags() { git --git-dir="$tmp/$1.git" tag --list; }
 
 new_repo first
 if sh release.sh </dev/null >"$tmp/output" 2>&1; then fail 'missing selection published a release'; fi
+grep -Fq '当前版本：尚无发布版本' "$tmp/output" || fail 'missing initial version before selection'
+for option in '1) patch（修订版本） -> v0.1.0' '2) minor（次版本） -> v0.1.0' '3) major（主版本） -> v0.1.0'; do
+  grep -Fq "$option" "$tmp/output" || fail "wrong initial preview: $option"
+done
 [[ -z $(git tag --list) && -z $(remote_tags first) ]] || fail 'EOF created a tag'
 printf '1\n' | sh release.sh --dry-run >"$tmp/output"
-grep -Fq v0.1.0 "$tmp/output" || fail 'wrong initial version'
+grep -Fq 'Release: none -> v0.1.0' "$tmp/output" || fail 'wrong initial version'
 [[ -z $(git tag --list) && -z $(remote_tags first) ]] || fail 'dry run created a tag'
 printf 'patch\n' | sh release.sh >"$tmp/output"
 [[ $(remote_tags first) == v0.1.0 ]] || fail 'first release was not pushed'
@@ -51,6 +55,11 @@ for bump in patch minor major; do
   git config push.followTags true
   case "$bump" in patch) next=v1.2.4;; minor) next=v1.3.0;; major) next=v2.0.0;; esac
   case "$bump" in patch) choice=1;; minor) choice=2;; major) choice=3;; esac
+  if sh release.sh --dry-run </dev/null >"$tmp/output" 2>&1; then fail 'missing selection was accepted'; fi
+  grep -Fq '当前版本：v1.2.3' "$tmp/output" || fail 'missing current version before selection'
+  for option in '1) patch（修订版本） -> v1.2.4' '2) minor（次版本） -> v1.3.0' '3) major（主版本） -> v2.0.0'; do
+    grep -Fq "$option" "$tmp/output" || fail "wrong version preview: $option"
+  done
   printf '\ninvalid\n%s\n' "$choice" | sh release.sh --dry-run >"$tmp/output" 2>&1
   grep -Fq "Release: v1.2.3 -> $next" "$tmp/output" || fail "wrong interactive $bump selection"
   [[ $(remote_tags "$bump") == v1.2.3 ]] || fail 'interactive dry run published a tag'

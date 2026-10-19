@@ -140,7 +140,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1 minor
 
 PowerShell 入口调用 Git 自带的 Bash，复用相同的版本选择、检查与发布逻辑，无需 WSL；使用 PowerShell 7 时可以将命令中的 `powershell` 替换为 `pwsh`。
 
-未指定升级类型时，输入 `1` / `2` / `3` 或对应类型名称进行选择；空输入或无效输入会重新询问，输入结束则取消发布。自动化调用请显式传入升级类型。
+未指定升级类型时，先显示当前版本及各选项对应的新版本，输入 `1` / `2` / `3` 或对应类型名称进行选择，选定后显示版本变更；空输入或无效输入会重新询问，输入结束则取消发布。自动化调用请显式传入升级类型。
 
 版本号来自 `vMAJOR.MINOR.PATCH` Git 标签，不维护额外版本文件；没有历史版本时，首次发布固定为 `v0.1.0`。发布包的 `fanqie-dl --version` 显示该版本；普通 `go build` 显示 `dev`。
 

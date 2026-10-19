@@ -25,8 +25,24 @@ if git tag --points-at HEAD | grep -Eq "$stable"; then
   die 'HEAD already has a release tag; retry its push or rerun the existing GitHub Actions job'
 fi
 latest=$(git tag --list 'v*' --sort=-version:refname | grep -E "$stable" | head -n 1)
+if [ -z "$latest" ]; then
+  next_patch=v0.1.0
+  next_minor=v0.1.0
+  next_major=v0.1.0
+else
+  git merge-base --is-ancestor "$latest" HEAD || die "latest release $latest is not an ancestor of HEAD"
+  numbers=${latest#v}
+  major=${numbers%%.*}
+  numbers=${numbers#*.}
+  minor=${numbers%%.*}
+  patch=${numbers#*.}
+  next_patch="v$major.$minor.$((patch + 1))"
+  next_minor="v$major.$((minor + 1)).0"
+  next_major="v$((major + 1)).0.0"
+fi
+printf '当前版本：%s\n' "${latest:-尚无发布版本}"
 if [ -z "$bump" ]; then
-  printf '请选择升级类型：\n  1) patch（修订版本）\n  2) minor（次版本）\n  3) major（主版本）\n' >&2
+  printf '请选择升级类型：\n  1) patch（修订版本） -> %s\n  2) minor（次版本） -> %s\n  3) major（主版本） -> %s\n' "$next_patch" "$next_minor" "$next_major" >&2
   while :; do
     printf '输入编号或类型：' >&2
     IFS= read -r selection || die 'no version increment selected; release canceled'
@@ -39,21 +55,11 @@ if [ -z "$bump" ]; then
     break
   done
 fi
-if [ -z "$latest" ]; then
-  next=v0.1.0
-else
-  git merge-base --is-ancestor "$latest" HEAD || die "latest release $latest is not an ancestor of HEAD"
-  numbers=${latest#v}
-  major=${numbers%%.*}
-  numbers=${numbers#*.}
-  minor=${numbers%%.*}
-  patch=${numbers#*.}
-  case "$bump" in
-    patch) next="v$major.$minor.$((patch + 1))" ;;
-    minor) next="v$major.$((minor + 1)).0" ;;
-    major) next="v$((major + 1)).0.0" ;;
-  esac
-fi
+case "$bump" in
+  patch) next=$next_patch ;;
+  minor) next=$next_minor ;;
+  major) next=$next_major ;;
+esac
 
 echo "Release: ${latest:-none} -> $next"
 if [ "$dry_run" = true ]; then
