@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $tmp = Join-Path ([IO.Path]::GetTempPath()) ('fanqie-release-test-' + [guid]::NewGuid())
-$gitCommand = (Get-Command git -CommandType Application).Source
+$gitCommand = (Get-Command git -CommandType Application -TotalCount 1).Source
 $savedEnv = @{}
 foreach ($name in 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL') {
     $savedEnv[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
@@ -37,7 +37,7 @@ try {
             # Exercise the Windows Git layout with native Bash on other test hosts.
             $global:fanqieReleaseExecPath = Join-Path $tmp 'Git/mingw64/libexec/git-core'
             $null = New-Item -ItemType Directory -Path $global:fanqieReleaseExecPath, (Join-Path $tmp 'Git/bin')
-            Copy-Item -LiteralPath (Get-Command bash -CommandType Application).Source -Destination (Join-Path $tmp 'Git/bin/bash.exe')
+            Copy-Item -LiteralPath (Get-Command bash -CommandType Application -TotalCount 1).Source -Destination (Join-Path $tmp 'Git/bin/bash.exe')
             function git { $global:LASTEXITCODE = 0; $global:fanqieReleaseExecPath }
         }
         $wrapper = Join-Path $repo 'release.ps1'
