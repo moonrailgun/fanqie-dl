@@ -107,10 +107,11 @@ bash scripts/install_test.sh
 FANQIE_LIVE_TEST=1 go test ./internal/fanqie -run TestLive -v
 ```
 
-Windows 安装脚本测试（PowerShell 5.1 或 7）：
+Windows 脚本测试（PowerShell 5.1 或 7，需要 Git for Windows）：
 
 ```powershell
 ./scripts/install_test.ps1
+./scripts/release_test.ps1
 ```
 
 离线测试覆盖签名参考向量、POST 请求体签名、DH/CM 解密、批量对象/数组响应、部分失败与单章补取、100 章分批、目录顺序和缺章检查、HTML 转文本、失败恢复、缓存损坏和已有文件保护。
@@ -129,13 +130,23 @@ Windows 安装脚本测试（PowerShell 5.1 或 7）：
 ./release.sh major      # 例如 v0.2.0 -> v1.0.0
 ```
 
+Windows 安装完整的 [Git for Windows](https://gitforwindows.org/) 后，可以在 Git Bash 中执行上述命令，或在 PowerShell 中执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1 --dry-run
+powershell -NoProfile -ExecutionPolicy Bypass -File .\release.ps1 minor
+```
+
+PowerShell 入口调用 Git 自带的 Bash，复用相同的版本选择、检查与发布逻辑，无需 WSL；使用 PowerShell 7 时可以将命令中的 `powershell` 替换为 `pwsh`。
+
 未指定升级类型时，输入 `1` / `2` / `3` 或对应类型名称进行选择；空输入或无效输入会重新询问，输入结束则取消发布。自动化调用请显式传入升级类型。
 
 版本号来自 `vMAJOR.MINOR.PATCH` Git 标签，不维护额外版本文件；没有历史版本时，首次发布固定为 `v0.1.0`。发布包的 `fanqie-dl --version` 显示该版本；普通 `go build` 显示 `dev`。
 
 脚本会拉取远端 `main` 和标签，要求工作区干净、当前分支为 `main` 且与 `origin/main` 一致，当前提交也不能已有发布标签。通过检查后创建带注释的标签并只推送该标签，不代为提交代码或推送分支。`--dry-run` 同样执行这些检查和拉取操作。
 
-标签推送触发 `.github/workflows/release.yml`：先在 Windows 上用 PowerShell 5.1 和 7 验证安装脚本，再运行离线测试与 `go vet`，通过后用 GoReleaser 构建 macOS、Linux、Windows 的 amd64/arm64 共 6 个版本，发布 GitHub Release、压缩包（Windows 为 ZIP，其余为 tar.gz）和校验文件。工作流使用仓库自带的 `GITHUB_TOKEN`，无需额外配置发布密钥；仓库需启用 GitHub Actions。
+标签推送触发 `.github/workflows/release.yml`：先在 Windows 上用 PowerShell 5.1 和 7 验证安装、发布脚本，再运行离线测试与 `go vet`，通过后用 GoReleaser 构建 macOS、Linux、Windows 的 amd64/arm64 共 6 个版本，发布 GitHub Release、压缩包（Windows 为 ZIP，其余为 tar.gz）和校验文件。工作流使用仓库自带的 `GITHUB_TOKEN`，无需额外配置发布密钥；仓库需启用 GitHub Actions。
 
 推送成功只表示已触发发布，构建和上传结果需在仓库 Actions 中查看。标签推送失败时，脚本保留本地标签并打印重试命令；Actions 失败时修复原因并重新运行对应工作流，代码修复则提交后发布新版本。
 

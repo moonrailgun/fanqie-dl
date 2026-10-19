@@ -20,10 +20,12 @@ jobs:
         shell: powershell
         run: |
           ./scripts/install_test.ps1
+          ./scripts/release_test.ps1
       - name: Test PowerShell 7
         shell: pwsh
         run: |
           ./scripts/install_test.ps1
+          ./scripts/release_test.ps1
 
   release:
     needs: windows-scripts
