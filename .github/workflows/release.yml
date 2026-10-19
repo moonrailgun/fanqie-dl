@@ -27,6 +27,7 @@ jobs:
           go test -race ./...
           go vet ./...
           bash scripts/release_test.sh
+          bash scripts/install_test.sh
       - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser

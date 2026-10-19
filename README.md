@@ -2,7 +2,23 @@
 
 从 [ch6vip/fqapp](https://github.com/ch6vip/fqapp) 提取小说搜索、目录获取和正文解密，用 Go 实现的独立命令行下载器。只使用 Go 标准库，无需 Flutter、Rust、Python、设备注册服务或第三方解析服务。
 
-## 构建与使用
+## 安装与使用
+
+macOS / Linux 可以使用安装脚本（仓库发布首个 Release 后可用）：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/moonrailgun/fanqie-dl/main/scripts/install.sh | sh
+fanqie-dl --version
+fanqie-dl search 三国演义
+```
+
+脚本自动识别系统和 amd64 / arm64 架构，下载最新正式 Release，验证 SHA-256 后安装到 `~/.local/bin/fanqie-dl`，无需 `sudo` 或 Go 环境。重复执行即可升级；下载或校验失败会保留旧版本。脚本不会修改 shell 配置，如果该目录尚未加入 `PATH`，在 `~/.zshrc`（Bash 用户使用 `~/.bashrc`）中添加：
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+重新打开终端后生效。已有源码时也可以运行 `sh scripts/install.sh`；设置 `FANQIE_DL_INSTALL_DIR` 可指定其他安装目录。
 
 可以从 [GitHub Releases](https://github.com/moonrailgun/fanqie-dl/releases) 下载对应系统和架构的压缩包，解压后直接运行；Windows 使用 `fanqie-dl.exe`。每个版本附带 `checksums.txt`（SHA-256）。
 
@@ -76,6 +92,7 @@ go test ./...
 go test -race ./...
 go vet ./...
 bash scripts/release_test.sh
+bash scripts/install_test.sh
 
 # 可选：请求真实上游，验证搜索、目录、单章及批量正文解密
 FANQIE_LIVE_TEST=1 go test ./internal/fanqie -run TestLive -v
