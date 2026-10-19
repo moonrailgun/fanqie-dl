@@ -15,15 +15,14 @@ new_repo() {
   git init -q --bare "$tmp/$name.git"
   git init -q -b main "$tmp/$name"
   cd "$tmp/$name"
-  mkdir scripts
-  cp "$root/scripts/release.sh" scripts/
-  git add scripts
+  cp "$root/release.sh" .
+  git add release.sh
   git commit -qm initial
   git remote add origin "$tmp/$name.git"
   git push -q -u origin main
 }
 expect_failure() {
-  if sh scripts/release.sh patch >"$tmp/output" 2>&1; then
+  if sh release.sh patch >"$tmp/output" 2>&1; then
     fail "expected failure: $1"
   fi
   grep -Fq "$1" "$tmp/output" || { cat "$tmp/output"; fail "missing error: $1"; }
@@ -31,12 +30,12 @@ expect_failure() {
 remote_tags() { git --git-dir="$tmp/$1.git" tag --list; }
 
 new_repo first
-if sh scripts/release.sh </dev/null >"$tmp/output" 2>&1; then fail 'missing selection published a release'; fi
+if sh release.sh </dev/null >"$tmp/output" 2>&1; then fail 'missing selection published a release'; fi
 [[ -z $(git tag --list) && -z $(remote_tags first) ]] || fail 'EOF created a tag'
-printf '1\n' | sh scripts/release.sh --dry-run >"$tmp/output"
+printf '1\n' | sh release.sh --dry-run >"$tmp/output"
 grep -Fq v0.1.0 "$tmp/output" || fail 'wrong initial version'
 [[ -z $(git tag --list) && -z $(remote_tags first) ]] || fail 'dry run created a tag'
-printf 'patch\n' | sh scripts/release.sh >"$tmp/output"
+printf 'patch\n' | sh release.sh >"$tmp/output"
 [[ $(remote_tags first) == v0.1.0 ]] || fail 'first release was not pushed'
 [[ $(git cat-file -t refs/tags/v0.1.0) == tag ]] || fail 'release tag is not annotated'
 expect_failure 'already has a release tag'
@@ -52,10 +51,10 @@ for bump in patch minor major; do
   git config push.followTags true
   case "$bump" in patch) next=v1.2.4;; minor) next=v1.3.0;; major) next=v2.0.0;; esac
   case "$bump" in patch) choice=1;; minor) choice=2;; major) choice=3;; esac
-  printf '\ninvalid\n%s\n' "$choice" | sh scripts/release.sh --dry-run >"$tmp/output" 2>&1
+  printf '\ninvalid\n%s\n' "$choice" | sh release.sh --dry-run >"$tmp/output" 2>&1
   grep -Fq "Release: v1.2.3 -> $next" "$tmp/output" || fail "wrong interactive $bump selection"
   [[ $(remote_tags "$bump") == v1.2.3 ]] || fail 'interactive dry run published a tag'
-  sh scripts/release.sh "$bump" >"$tmp/output"
+  sh release.sh "$bump" >"$tmp/output"
   [[ $(remote_tags "$bump") == "$(printf 'v1.2.3\n%s' "$next")" ]] || fail "wrong $bump tags"
 done
 
@@ -72,7 +71,7 @@ git push -q origin main
 git reset -q --hard HEAD~1
 expect_failure 'main must match origin/main'
 git reset -q --hard origin/main
-if sh scripts/release.sh invalid >"$tmp/output" 2>&1; then fail 'accepted invalid argument'; fi
+if sh release.sh invalid >"$tmp/output" 2>&1; then fail 'accepted invalid argument'; fi
 [[ -z $(git tag --list) && -z $(remote_tags guards) ]] || fail 'preflight failure created a tag'
 
 new_repo rejected

@@ -122,11 +122,11 @@ Windows 安装脚本测试（PowerShell 5.1 或 7）：
 先将改动提交并推送到 `main`，然后执行（需要 Git 和仓库推送权限）：
 
 ```sh
-./scripts/release.sh            # 交互选择 patch / minor / major
-./scripts/release.sh --dry-run  # 交互选择并预览，不创建或推送发布标签
-./scripts/release.sh patch      # 例如 v0.1.0 -> v0.1.1
-./scripts/release.sh minor      # 例如 v0.1.1 -> v0.2.0
-./scripts/release.sh major      # 例如 v0.2.0 -> v1.0.0
+./release.sh            # 交互选择 patch / minor / major
+./release.sh --dry-run  # 交互选择并预览，不创建或推送发布标签
+./release.sh patch      # 例如 v0.1.0 -> v0.1.1
+./release.sh minor      # 例如 v0.1.1 -> v0.2.0
+./release.sh major      # 例如 v0.2.0 -> v1.0.0
 ```
 
 未指定升级类型时，输入 `1` / `2` / `3` 或对应类型名称进行选择；空输入或无效输入会重新询问，输入结束则取消发布。自动化调用请显式传入升级类型。

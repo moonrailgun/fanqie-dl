@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-usage() { echo 'Usage: ./scripts/release.sh [patch|minor|major] [--dry-run]'; }
+usage() { echo 'Usage: ./release.sh [patch|minor|major] [--dry-run]'; }
 die() { echo "Error: $*" >&2; exit 1; }
 bump=
 dry_run=false
@@ -13,7 +13,7 @@ for arg in "$@"; do
     *) usage >&2; die "unknown argument: $arg" ;;
   esac
 done
-cd -- "$(dirname -- "$0")/.."
+cd -- "$(dirname -- "$0")"
 
 [ "$(git branch --show-current)" = main ] || die 'must be on main'
 [ -z "$(git status --porcelain)" ] || die 'working tree must be clean; commit changes first'
