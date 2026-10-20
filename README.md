@@ -30,9 +30,12 @@ fanqie-dl search --json --offset 10 三国演义
 # 按书籍 ID 或详情页链接下载为 UTF-8 TXT
 fanqie-dl download 6838936284967209991
 fanqie-dl download -o 三国演义.txt 'https://fanqienovel.com/page/6838936284967209991'
+
+# 只下载第 10–20 章（默认从第一章到最后一章，--end 省略即到最后一章）
+fanqie-dl download --start 10 --end 20 6838936284967209991
 ```
 
-选项需放在关键词或书籍 ID 之前，`download -h` 查看全部选项（`--cache-dir`、`--interval`、`--timeout`）。
+选项需放在关键词或书籍 ID 之前，`download -h` 查看全部选项（`--start`、`--end`、`--cache-dir`、`--interval`、`--timeout`）。指定范围时默认文件名为 `书籍ID_起-止.txt`。
 
 - 章节会缓存，中断后重新执行同一命令即可继续。
 - 任一章节失败则不生成文件，也不会覆盖已有文件。
