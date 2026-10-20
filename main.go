@@ -26,7 +26,7 @@ const usage = `fanqie-dl — 番茄小说搜索与全本 TXT 下载
 
 用法：
   fanqie-dl search [--json] [--offset N] [--timeout 20s] 关键词
-  fanqie-dl download [-o 文件.txt] [--cache-dir 目录] [--interval 200ms] [--timeout 20s] 书籍ID或链接
+  fanqie-dl download [-o 文件.txt] [--start N] [--end M] [--cache-dir 目录] [--interval 200ms] [--timeout 20s] 书籍ID或链接
   fanqie-dl --version
 
 选项写在关键词或书籍 ID 前。使用 search -h / download -h 查看选项。
@@ -99,6 +99,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	output := f.String("o", "", "输出 TXT 路径，默认 书籍ID.txt")
 	cache := f.String("cache-dir", "", "章节缓存目录，默认系统缓存目录下的 fanqie-dl")
 	interval := f.Duration("interval", 200*time.Millisecond, "批量请求或单章补取之间的最小等待时间")
+	start := f.Int("start", 1, "起始章节序号（从 1 开始，含）")
+	end := f.Int("end", 0, "结束章节序号（含），0 表示最后一章")
 	f.Usage = func() {
 		fmt.Fprintln(stderr, "用法：fanqie-dl download [选项] 书籍ID或链接")
 		f.PrintDefaults()
@@ -112,12 +114,22 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if f.NArg() != 1 || *interval < 0 || *timeout <= 0 {
 		return errors.New("download requires one book ID/link, interval >= 0 and timeout > 0; flags go before the book ID")
 	}
+	if *start < 1 || *end < 0 || (*end > 0 && *end < *start) {
+		return errors.New("download requires start >= 1 and end = 0 or end >= start")
+	}
 	bookID, err := fanqie.ParseBookID(f.Arg(0))
 	if err != nil {
 		return err
 	}
 	if *output == "" {
 		*output = bookID + ".txt"
+		if *start > 1 || *end > 0 {
+			last := ""
+			if *end > 0 {
+				last = fmt.Sprint(*end)
+			}
+			*output = fmt.Sprintf("%s_%d-%s.txt", bookID, *start, last)
+		}
 	}
 	if *cache == "" {
 		root, err := os.UserCacheDir()
@@ -128,7 +140,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	}
 	fmt.Fprintf(stderr, "书籍 %s；章节缓存：%s\n", bookID, filepath.Join(*cache, bookID))
 	count, err := download.Run(ctx, fanqie.NewClient(*timeout), bookID, download.Options{
-		Output: *output, CacheDir: *cache, Interval: *interval,
+		Output: *output, CacheDir: *cache, Interval: *interval, Start: *start, End: *end,
 		Notice: func(message string) { fmt.Fprintln(stderr, oneLine(message)) },
 		Progress: func(done, total int, title string, cached bool) {
 			status := "下载"
