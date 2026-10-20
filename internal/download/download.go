@@ -24,8 +24,10 @@ type Source interface {
 type Options struct {
 	Output, CacheDir string
 	Interval         time.Duration
-	Progress         func(done, total int, title string, cached bool)
-	Notice           func(string)
+	// Start and End select 1-based inclusive chapters; 0 means first/last chapter.
+	Start, End int
+	Progress   func(done, total int, title string, cached bool)
+	Notice     func(string)
 }
 
 // Run exports a snapshot of the current directory, publishing only a complete TXT.
@@ -35,6 +37,9 @@ func Run(ctx context.Context, source Source, bookID string, opt Options) (int, e
 	}
 	if opt.Output == "" || opt.CacheDir == "" || opt.Interval < 0 {
 		return 0, errors.New("output, cache directory and non-negative interval are required")
+	}
+	if opt.Start < 0 || opt.End < 0 || (opt.End > 0 && opt.End < max(opt.Start, 1)) {
+		return 0, errors.New("invalid chapter range")
 	}
 	if _, err := os.Lstat(opt.Output); err == nil {
 		return 0, fmt.Errorf("output already exists: %s (choose another -o path)", opt.Output)
@@ -51,6 +56,14 @@ func Run(ctx context.Context, source Source, bookID string, opt Options) (int, e
 	if len(chapters) == 0 {
 		return 0, errors.New("book has no chapters")
 	}
+	total, start, end := len(chapters), max(opt.Start, 1), opt.End
+	if end == 0 {
+		end = total
+	}
+	if start > end || end > total {
+		return 0, fmt.Errorf("chapter range %d-%d exceeds %d chapters", start, end, total)
+	}
+	chapters = chapters[start-1 : end]
 	cache := filepath.Join(opt.CacheDir, bookID)
 	if err := os.MkdirAll(cache, 0700); err != nil {
 		return 0, err
@@ -97,7 +110,11 @@ func Run(ctx context.Context, source Source, bookID string, opt Options) (int, e
 					opt.Notice("作者信息暂不可用，继续导出完整正文")
 				}
 			}
-			if _, err := fmt.Fprintf(w, "%s\n作者：%s\n书籍 ID：%s\n章节数：%d\n\n", content.BookName, content.Author, bookID, len(chapters)); err != nil {
+			count := fmt.Sprint(total)
+			if len(chapters) < total {
+				count = fmt.Sprintf("第 %d-%d 章（全书 %d 章）", start, end, total)
+			}
+			if _, err := fmt.Fprintf(w, "%s\n作者：%s\n书籍 ID：%s\n章节数：%s\n\n", content.BookName, content.Author, bookID, count); err != nil {
 				return 0, err
 			}
 		}

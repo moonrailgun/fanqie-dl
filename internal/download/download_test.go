@@ -244,3 +244,27 @@ func TestCanceledContext(t *testing.T) {
 		t.Fatal("published incomplete book")
 	}
 }
+
+func TestChapterRange(t *testing.T) {
+	dir := t.TempDir()
+	source := &fakeSource{chapters: []fanqie.Chapter{{ID: "1", Title: "一"}, {ID: "2", Title: "二"}, {ID: "3", Title: "三"}}}
+	var totals []int
+	opt := Options{Output: filepath.Join(dir, "book.txt"), CacheDir: filepath.Join(dir, "cache"), Start: 2,
+		Progress: func(done, total int, title string, cached bool) { totals = append(totals, total) }}
+	if n, err := Run(context.Background(), source, "123", opt); err != nil || n != 2 {
+		t.Fatalf("%d %v", n, err)
+	}
+	if len(source.batches) != 1 || strings.Join(source.batches[0], ",") != "2,3" || fmt.Sprint(totals) != "[2 2]" {
+		t.Fatalf("batches %v, totals %v", source.batches, totals)
+	}
+	b, _ := os.ReadFile(opt.Output)
+	if string(b) != "测试书\n作者：作者\n书籍 ID：123\n章节数：第 2-3 章（全书 3 章）\n\n二\n\n正文2\n\n三\n\n正文3\n\n" {
+		t.Fatalf("unexpected TXT: %s", b)
+	}
+	for _, r := range [][2]int{{1, 4}, {4, 0}, {3, 2}, {-1, 0}} {
+		opt.Output, opt.Start, opt.End = filepath.Join(dir, fmt.Sprint(r)+".txt"), r[0], r[1]
+		if _, err := Run(context.Background(), source, "123", opt); err == nil {
+			t.Fatalf("accepted range %v", r)
+		}
+	}
+}
